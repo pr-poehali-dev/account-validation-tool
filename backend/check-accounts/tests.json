@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Check OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Check invalid format",
+      "method": "POST",
+      "path": "/",
+      "body": {"accounts": []},
+      "expectedStatus": 400,
+      "expectedBody": {},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Check invalid credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {"accounts": ["wrong@test.com:wrongpass123"], "threads": 1},
+      "expectedStatus": 200,
+      "expectedBody": {"total": 1},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
