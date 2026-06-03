@@ -1,8 +1,13 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
 const url = require('url');
+const { checkBatch } = require('./checker.cjs');
+
+ipcMain.handle('check-batch', async (_event, payload) => {
+  return await checkBatch(payload || {});
+});
 
 const isDev = !app.isPackaged;
 const DEV_URL = 'http://localhost:5173';
@@ -80,6 +85,7 @@ async function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 

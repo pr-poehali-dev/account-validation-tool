@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
 import { getProxyConfig } from '@/lib/proxyConfig';
-
-const API_URL = 'https://functions.poehali.dev/89956202-dc65-4543-8725-c4a0ad815187';
+import { runBatch, isDesktopApp } from '@/lib/checkerClient';
 
 interface AccountResult {
   id: number;
@@ -63,13 +62,7 @@ export default function CheckerSection() {
           ? { proxies: proxyCfg.list, proxy_type: proxyCfg.type, proxy_rotation: proxyCfg.rotation }
           : {};
 
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accounts: batch, threads: batchSize, ...proxyPayload }),
-        });
-
-        const data = await resp.json();
+        const data = await runBatch({ accounts: batch, threads: batchSize, ...proxyPayload });
 
         if (data.results) {
           const updates: Record<string, AccountResult> = {};
@@ -152,6 +145,17 @@ export default function CheckerSection() {
           <p className="text-sm text-gray-500 mt-0.5">Реальная проверка баланса через авторизацию на сайте</p>
         </div>
         <div className="flex items-center gap-2">
+          {isDesktopApp() ? (
+            <div className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl border border-cyan-500/25">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="mono text-xs text-cyan-400">LOCAL</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl">
+              <div className="w-2 h-2 rounded-full bg-gray-600" />
+              <span className="mono text-xs text-gray-500">CLOUD</span>
+            </div>
+          )}
           {(() => {
             const pc = getProxyConfig();
             return pc.enabled && pc.list.length > 0 ? (
