@@ -188,8 +188,8 @@ export default function CheckerSection() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="glass-card neon-border rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+        <div className="glass-card neon-border rounded-xl p-4 flex flex-col gap-3 h-[420px]">
+          <div className="flex items-center justify-between shrink-0">
             <span className="text-sm font-semibold text-gray-300">Список аккаунтов</span>
             <span className="mono text-xs text-gray-500">{parseAccounts(rawInput).length} строк</span>
           </div>
@@ -197,7 +197,7 @@ export default function CheckerSection() {
             value={rawInput}
             onChange={e => setRawInput(e.target.value)}
             placeholder={"email@example.com:password1\nlogin2@mail.com:password2"}
-            className="mono text-xs bg-transparent border border-gray-700 rounded-lg p-3 text-gray-300 placeholder-gray-600 resize-none h-52 focus:outline-none focus:border-cyan-500/50 transition-colors"
+            className="mono text-xs bg-transparent border border-gray-700 rounded-lg p-3 text-gray-300 placeholder-gray-600 resize-none flex-1 min-h-0 focus:outline-none focus:border-cyan-500/50 transition-colors"
           />
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
@@ -216,8 +216,8 @@ export default function CheckerSection() {
           </div>
         </div>
 
-        <div className="glass-card neon-border rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+        <div className="glass-card neon-border rounded-xl p-4 flex flex-col gap-3 h-[420px]">
+          <div className="flex items-center justify-between shrink-0">
             <span className="text-sm font-semibold text-gray-300">Результаты</span>
             {progress > 0 && <span className="mono text-xs text-cyan-400">{progress}%</span>}
           </div>
@@ -231,7 +231,7 @@ export default function CheckerSection() {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto h-52 space-y-1 pr-1">
+          <div className="flex-1 overflow-y-auto min-h-0 space-y-1 pr-1">
             {results.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-600">
                 <Icon name="ScanLine" size={32} />
