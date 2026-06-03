@@ -64,7 +64,7 @@ export default function ConfigSection() {
 
           <div className="grid grid-cols-1 gap-4">
             {[
-              { label: 'Потоков (макс 10)', value: threads, setter: setThreads, min: 1, max: 10, unit: 'x', color: 'text-cyan-400' },
+              { label: 'Потоков (макс 150)', value: threads, setter: setThreads, min: 1, max: 150, unit: 'x', color: 'text-cyan-400' },
               { label: 'Таймаут (сек)', value: timeout, setter: setTimeoutVal, min: 10, max: 120, unit: 's', color: 'text-purple-400' },
               { label: 'Задержка между запросами (мс)', value: delay, setter: setDelay, min: 0, max: 5000, unit: 'ms', color: 'text-orange-400' },
             ].map(item => (

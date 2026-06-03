@@ -40,7 +40,7 @@ export default function CheckerSection() {
     const initial: AccountResult[] = lines.map((v, i) => ({ id: i, value: v, status: 'pending' }));
     setResults(initial);
 
-    const batchSize = Math.min(threads, 10);
+    const batchSize = Math.min(threads, 150);
     let done = 0;
     let validCount = 0;
     let invalidCount = 0;
@@ -205,16 +205,16 @@ export default function CheckerSection() {
           />
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <label className="text-xs text-gray-500">Потоков (макс 10):</label>
+              <label className="text-xs text-gray-500">Потоков (макс 150):</label>
               <input
                 type="range"
                 min={1}
-                max={10}
+                max={150}
                 value={threads}
                 onChange={e => setThreads(Number(e.target.value))}
                 className="flex-1 accent-cyan-400"
               />
-              <span className="mono text-sm text-cyan-400 w-6 text-right">{threads}</span>
+              <span className="mono text-sm text-cyan-400 w-8 text-right">{threads}</span>
             </div>
             <p className="text-[10px] text-gray-600 mono">Формат: email:пароль (по одному на строку)</p>
           </div>

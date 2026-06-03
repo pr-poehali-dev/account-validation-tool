@@ -199,7 +199,7 @@ def handler(event: dict, context) -> dict:
         return {"statusCode": 400, "headers": cors, "body": json.dumps({"error": "Invalid JSON"})}
 
     accounts_raw = body.get("accounts", [])
-    threads = min(int(body.get("threads", 5)), 20)
+    threads = min(int(body.get("threads", 5)), 150)
     proxy_list = body.get("proxies", [])
     proxy_type = body.get("proxy_type", "https")
     proxy_rotation = body.get("proxy_rotation", "each")

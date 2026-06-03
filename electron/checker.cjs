@@ -161,7 +161,7 @@ async function checkBatch({ accounts = [], threads = 5, proxies = [], proxy_type
   });
 
   const results = [];
-  const limit = Math.min(Math.max(threads, 1), 10);
+  const limit = Math.min(Math.max(threads, 1), 150);
   let cursor = 0;
 
   async function worker() {
