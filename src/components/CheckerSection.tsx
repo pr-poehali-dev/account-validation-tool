@@ -29,7 +29,10 @@ export default function CheckerSection() {
 
   const runCheck = async () => {
     const lines = parseAccounts(rawInput);
-    if (!lines.length) return;
+    if (!lines.length) {
+      alert('Формат неверный. Используй login:password (по одному на строку)');
+      return;
+    }
     stopRef.current = false;
     setIsRunning(true);
     setProgress(0);
@@ -268,7 +271,7 @@ export default function CheckerSection() {
         {!isRunning ? (
           <button
             onClick={runCheck}
-            disabled={!parseAccounts(rawInput).length}
+            disabled={!rawInput.trim()}
             className="cyber-btn px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Icon name="Play" size={15} />
