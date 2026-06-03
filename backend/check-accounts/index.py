@@ -113,6 +113,22 @@ def build_proxy_dict(proxy_str: str, proxy_type: str) -> dict:
     return {"http": url, "https": url}
 
 
+def _is_blocked(text: str) -> bool:
+    """Определяет, заблокирован ли запрос антиботом (Incapsula/Cloudflare)."""
+    if not text:
+        return False
+    markers = [
+        "incapsula incident",
+        "_incapsula_resource",
+        "request unsuccessful",
+        "attention required",
+        "cf-browser-verification",
+        "checking your browser",
+    ]
+    low = text.lower()
+    return any(m in low for m in markers)
+
+
 def check_account(login: str, password: str, proxy_str: str = "", proxy_type: str = "https") -> dict:
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -123,6 +139,14 @@ def check_account(login: str, password: str, proxy_str: str = "", proxy_type: st
 
     try:
         security = get_security_token(session)
+
+        if not security:
+            return {
+                "login": login,
+                "status": "error",
+                "error": "Не удалось получить токен (возможна блокировка антиботом). Используйте прокси или десктоп-версию.",
+                "accounts": [],
+            }
 
         login_data = {
             "security": security,
@@ -143,6 +167,15 @@ def check_account(login: str, password: str, proxy_str: str = "", proxy_type: st
         )
 
         login_text = login_resp.text.strip()
+
+        if _is_blocked(login_text):
+            return {
+                "login": login,
+                "status": "error",
+                "error": "Заблокировано антиботом (Incapsula). Используйте прокси или десктоп-версию.",
+                "accounts": [],
+            }
+
         try:
             login_json = login_resp.json()
         except Exception:
@@ -150,11 +183,12 @@ def check_account(login: str, password: str, proxy_str: str = "", proxy_type: st
 
         is_success = False
         if isinstance(login_json, dict):
-            is_success = login_json.get("status") in ("success", "ok")
-        elif isinstance(login_json, str):
-            is_success = "success" in login_json.lower()
+            status_val = str(login_json.get("status", "")).lower()
+            is_success = status_val in ("success", "ok", "1", "true") or login_json.get("success") is True
+            if not is_success and login_json.get("redirect") and "home" in str(login_json.get("redirect")).lower():
+                is_success = True
 
-        if not is_success and "success" not in login_text.lower():
+        if not is_success:
             if isinstance(login_json, dict):
                 error_msg = login_json.get("message", login_json.get("error", "Неверные данные"))
             else:

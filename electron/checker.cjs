@@ -67,6 +67,20 @@ function request(urlStr, { method = 'GET', headers = {}, body = null, agent = nu
   });
 }
 
+function isBlocked(text) {
+  if (!text) return false;
+  const markers = [
+    'incapsula incident',
+    '_incapsula_resource',
+    'request unsuccessful',
+    'attention required',
+    'cf-browser-verification',
+    'checking your browser',
+  ];
+  const low = text.toLowerCase();
+  return markers.some((m) => low.includes(m));
+}
+
 function extractSecurity(html) {
   const m = html.match(/name=["']security["']\s+value=["']([^"']+)["']/i)
     || html.match(/value=["']([^"']+)["']\s+name=["']security["']/i);
@@ -90,8 +104,16 @@ async function checkAccount(login, password, proxyStr = '', proxyType = 'https')
       headers: { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
       agent,
     });
+    if (isBlocked(portal.body)) {
+      return { login, status: 'error', error: 'Заблокировано антиботом (Incapsula). Включите прокси.', accounts: [] };
+    }
+
     const security = extractSecurity(portal.body);
     let cookies = portal.cookies;
+
+    if (!security) {
+      return { login, status: 'error', error: 'Не удалось получить токен (возможна блокировка). Включите прокси.', accounts: [] };
+    }
 
     const form = new URLSearchParams({
       security,
@@ -118,14 +140,22 @@ async function checkAccount(login, password, proxyStr = '', proxyType = 'https')
     });
     cookies = loginResp.cookies;
 
+    if (isBlocked(loginResp.body)) {
+      return { login, status: 'error', error: 'Заблокировано антиботом (Incapsula). Включите прокси.', accounts: [] };
+    }
+
     let loginJson = {};
     try { loginJson = JSON.parse(loginResp.body); } catch { loginJson = {}; }
 
     let isSuccess = false;
     if (loginJson && typeof loginJson === 'object') {
-      isSuccess = ['success', 'ok'].includes(loginJson.status);
+      const statusVal = String(loginJson.status || '').toLowerCase();
+      isSuccess = ['success', 'ok', '1', 'true'].includes(statusVal) || loginJson.success === true;
+      if (!isSuccess && loginJson.redirect && /home/i.test(String(loginJson.redirect))) {
+        isSuccess = true;
+      }
     }
-    if (!isSuccess && !/success/i.test(loginResp.body)) {
+    if (!isSuccess) {
       const err = (loginJson && (loginJson.message || loginJson.error)) || 'Неверные данные';
       return { login, status: 'invalid', error: String(err), accounts: [] };
     }
