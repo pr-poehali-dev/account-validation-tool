@@ -69,38 +69,42 @@ export default function CheckerSection() {
         const data = await resp.json();
 
         if (data.results) {
-          for (const res of data.results) {
-            const idx = lines.indexOf(res.login + ':' + lines.find(l => l.startsWith(res.login + ':'))?.split(':')[1] || '');
-            const realId = lines.findIndex(l => l.startsWith(res.login + ':'));
+          const updates: Record<string, AccountResult> = {};
 
+          for (const res of data.results) {
             if (res.status === 'valid') validCount++;
             else if (res.status === 'invalid') invalidCount++;
             else errorCount++;
-
             done++;
 
             const balanceStr = res.accounts?.[0]?.balance || res.raw_balance || '—';
             const equityStr = res.accounts?.[0]?.equity || res.raw_equity || '—';
-
-            setResults(prev =>
-              prev.map(r => {
-                if (r.value.startsWith(res.login + ':')) {
-                  return {
-                    ...r,
-                    status: res.status as AccountResult['status'],
-                    details: res.status === 'valid'
-                      ? `Balance: ${balanceStr} · Equity: ${equityStr}`
-                      : res.error || 'Неверные данные',
-                    balance: balanceStr,
-                    equity: equityStr,
-                    accounts: res.accounts || [],
-                    checkedAt: new Date().toLocaleTimeString('ru-RU'),
-                  };
-                }
-                return r;
-              })
-            );
+            updates[res.login] = {
+              id: -1,
+              value: '',
+              status: res.status as AccountResult['status'],
+              details: res.status === 'valid'
+                ? `Balance: ${balanceStr} · Equity: ${equityStr}`
+                : res.error || 'Неверные данные',
+              balance: balanceStr,
+              equity: equityStr,
+              accounts: res.accounts || [],
+              checkedAt: new Date().toLocaleTimeString('ru-RU'),
+            };
           }
+
+          setResults(prev =>
+            prev.map(r => {
+              const login = r.value.split(':')[0];
+              if (updates[login]) {
+                return { ...r, ...updates[login], id: r.id, value: r.value };
+              }
+              return r;
+            })
+          );
+        } else {
+          done += batch.length;
+          errorCount += batch.length;
         }
       } catch (e) {
         batchIds.forEach(() => errorCount++);
