@@ -21,6 +21,7 @@ export default function CheckerSection() {
   const [threads, setThreads] = useState(5);
   const [progress, setProgress] = useState(0);
   const [stats, setStats] = useState({ valid: 0, invalid: 0, errors: 0, total: 0 });
+  const [balanceLog, setBalanceLog] = useState<{ time: string; login: string; balance: string; equity: string }[]>([]);
   const stopRef = useRef(false);
 
   const parseAccounts = (text: string): string[] =>
@@ -66,6 +67,7 @@ export default function CheckerSection() {
 
         if (data.results) {
           const updates: Record<string, AccountResult> = {};
+          const newLogLines: { time: string; login: string; balance: string; equity: string }[] = [];
 
           for (const res of data.results) {
             if (res.status === 'valid') validCount++;
@@ -75,6 +77,15 @@ export default function CheckerSection() {
 
             const balanceStr = res.accounts?.[0]?.balance || res.raw_balance || '—';
             const equityStr = res.accounts?.[0]?.equity || res.raw_equity || '—';
+
+            if (res.status === 'valid') {
+              newLogLines.push({
+                time: new Date().toLocaleTimeString('ru-RU'),
+                login: res.login,
+                balance: balanceStr,
+                equity: equityStr,
+              });
+            }
             updates[res.login] = {
               id: -1,
               value: '',
@@ -98,6 +109,10 @@ export default function CheckerSection() {
               return r;
             })
           );
+
+          if (newLogLines.length) {
+            setBalanceLog(prev => [...prev, ...newLogLines]);
+          }
         } else {
           done += batch.length;
           errorCount += batch.length;
@@ -127,6 +142,22 @@ export default function CheckerSection() {
     setRawInput('');
     setProgress(0);
     setStats({ valid: 0, invalid: 0, errors: 0, total: 0 });
+    setBalanceLog([]);
+  };
+
+  const balanceLogText = () =>
+    balanceLog.map(l => `[${l.time}] ${l.login} | Balance: ${l.balance} | Equity: ${l.equity}`).join('\n');
+
+  const copyBalanceLog = () => {
+    navigator.clipboard.writeText(balanceLogText());
+  };
+
+  const downloadBalanceLog = () => {
+    const blob = new Blob([balanceLogText()], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'balance_log.txt';
+    a.click();
   };
 
   const statusBadge = (s: AccountResult['status']) => {
@@ -268,6 +299,48 @@ export default function CheckerSection() {
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="glass-card neon-border rounded-xl p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <Icon name="Wallet" size={15} className="text-green-400" />
+            <span className="text-sm font-semibold text-gray-300">Лог балансов</span>
+            <span className="mono text-[10px] text-gray-600">({balanceLog.length})</span>
+          </div>
+          {balanceLog.length > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={copyBalanceLog}
+                className="mono text-[10px] flex items-center gap-1 px-2 py-1 rounded-md glass-card border border-gray-700 text-gray-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-all"
+              >
+                <Icon name="Copy" size={11} /> Копировать
+              </button>
+              <button
+                onClick={downloadBalanceLog}
+                className="mono text-[10px] flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-all"
+              >
+                <Icon name="Download" size={11} /> .txt
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="bg-black/40 rounded-lg p-3 h-[180px] overflow-y-auto font-mono text-[11px] leading-relaxed">
+          {balanceLog.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-gray-700 mono text-xs">
+              Балансы валидных аккаунтов появятся здесь
+            </div>
+          ) : (
+            balanceLog.map((line, idx) => (
+              <div key={idx} className="text-green-400/90 whitespace-pre-wrap break-all">
+                <span className="text-gray-600">[{line.time}]</span>{' '}
+                <span className="text-cyan-400">{line.login}</span>{' '}
+                <span className="text-gray-500">·</span> Balance: <span className="text-green-300">{line.balance}</span>{' '}
+                <span className="text-gray-500">·</span> Equity: <span className="text-green-300">{line.equity}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
